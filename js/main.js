@@ -78,6 +78,31 @@ for(var i=0;i<WHITE_COINS_NO;i++){
 var striker_geometry=new THREE.CylinderGeometry(STRIKER_RADIUS,STRIKER_RADIUS,STRIKER_HEIGHT,CIRCLE_SEGMENTS);
 var striker_material=new THREE.MeshBasicMaterial( {color: 0x0000ff} );
 var striker=new THREE.Mesh(striker_geometry, striker_material);
+
+//Arrow
+var dir=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z);
+var origin=new THREE.Vector3(STRIKER_X,STRIKER_Y,STRIKER_Z);
+var length=50;
+var hex=0x000000;
+var arrowHelper=new THREE.ArrowHelper(dir,origin,length,hex);
+scene.add(arrowHelper);
+
+
+//Power Bar
+var bar_geometry=new THREE.BoxGeometry( BAR_HEIGHT, BAR_THICKNESS, BAR_WIDTH );
+var bar_texture=new THREE.ImageUtils.loadTexture(BAR_PATH); 
+var bar_material=new THREE.MeshBasicMaterial( { map:bar_texture,side:THREE.DoubleSide } );
+var bar = new THREE.Mesh( bar_geometry, bar_material );
+bar.position.set(BAR_X, BAR_Y, BAR_Z);  
+scene.add(bar);
+
+//Cursor
+var cursor_geometry=new THREE.BoxGeometry( CURSOR_HEIGHT, CURSOR_THICKNESS, CURSOR_WIDTH );
+var cursor_texture=new THREE.ImageUtils.loadTexture(CURSOR_PATH); 
+var cursor_material=new THREE.MeshBasicMaterial( { map:cursor_texture,side:THREE.DoubleSide } );
+var cursor = new THREE.Mesh( cursor_geometry, cursor_material );
+
+//Updating
 function updateStriker(){
 	switch(STRIKER_DIRECTION){
 		case("L"):
@@ -90,31 +115,95 @@ function updateStriker(){
 	striker.position.set(STRIKER_X,STRIKER_Y,STRIKER_Z);
 	scene.add(striker)
 }
-
-//Rendering
-camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
-camera.lookAt(new THREE.Vector3(0,0,0));
+function updateArrow(){
+	switch(ARROW_DIRECTION){
+		case("L"):
+			var a=new THREE.Euler(0,ARROW_ROTATION_ANGLE,0, 'XYZ' );
+			var b=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z); 
+			b.applyEuler(a);
+			ARROW_X=b.x;
+			ARROW_Z=b.z;
+			break;
+		case("R"):
+			var a=new THREE.Euler(0,ARROW_ROTATION_ANGLE,0, 'XYZ' );
+			var b=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z); 
+			b.applyEuler(a);
+			ARROW_X=b.x;
+			ARROW_Z=b.z;
+			break;
+	}
+	scene.remove(arrowHelper);
+	dir=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z);
+	origin=new THREE.Vector3(STRIKER_X,STRIKER_Y,STRIKER_Z);
+	length=50;
+	hex=0x000000;
+	arrowHelper=new THREE.ArrowHelper(dir,origin,length,hex);
+	scene.add(arrowHelper);
+}
+function updateCursor(){
+	cursor.position.set(CURSOR_X, CURSOR_Y, CURSOR_Z);  
+	scene.add(cursor);
+}
 
 var render = function () {
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
 	document.addEventListener("keydown",keyDownHandler, false);	
 	document.addEventListener("keyup",keyUpHandler, false);	
+	document.addEventListener("mousemove",mouseHandler, false);	
+	if(POWER_SET==1){
+		CURSOR_XDIFF=(CURSOR_XDIFF+2)%CURSOR_MAXX;
+		CURSOR_X=CURSOR_MINX-CURSOR_XDIFF;
+	}
 	updateStriker();
+	updateArrow();
+	updateCursor();
 };
 
+//Movements.
 function keyDownHandler(event){
 	var keyPressed = String.fromCharCode(event.keyCode);
-	switch (keyPressed){
-		case "A":
-			STRIKER_DIRECTION="L";
-			break;
-		case "D":
-			STRIKER_DIRECTION="R";
-			break;
+	if(STRIKER_SET==1){
+		switch (keyPressed){
+			case "A":
+				STRIKER_DIRECTION="L";
+				break;
+			case "D":
+				STRIKER_DIRECTION="R";
+				break;
+		}
+	}
+	if(DIRECTION_SET==1){
+		switch (keyPressed){
+			case "A":
+				ARROW_DIRECTION="L";
+				break;
+			case "D":
+				ARROW_DIRECTION="R";
+				break;
+		}
+	}
+	
+	if(event.keyCode==13 && DIRECTION_SET==1){
+		DIRECTION_SET=0;
+		DIRECTION_DIRECTION="N";
+		POWER_SET=1;
+	}
+	if(event.keyCode==13 && STRIKER_SET==1){
+		STRIKER_SET=0;
+		STRIKER_DIRECTION="N";
+		DIRECTION_SET=1;
 	}
 }
 function keyUpHandler(event){
 	STRIKER_DIRECTION="N";
+	ARROW_DIRECTION="N";
 }
+function mouseHandler(event) {
+	MOUSE_X=event.clientX;
+	MOUSE_X=event.clientY;
+}
+//Rendering
+camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
+camera.lookAt(new THREE.Vector3(0,0,0));
 render();
