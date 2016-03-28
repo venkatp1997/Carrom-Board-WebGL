@@ -48,7 +48,6 @@ for(var i=0;i<EDGE_CIRCLES_NO;i++){
 	scene.add(edge_circle);
 }
 
-
 //Coins
 var coin_geometry=new THREE.CylinderGeometry(COIN_RADIUS,COIN_RADIUS,COIN_HEIGHT,CIRCLE_SEGMENTS);
 var coin_material=new THREE.MeshBasicMaterial( {color: 0xff0000} );
@@ -60,14 +59,27 @@ var black_sphere_material=new THREE.MeshBasicMaterial({color: 0x000000});
 var white_sphere_material=new THREE.MeshBasicMaterial({color: 0xffffff});
 for(var i=0;i<BLACK_COINS_NO;i++){
 	var black_sphere=new THREE.Mesh(coin_geometry,black_sphere_material);
+	BLACK_X[i]=Math.sin(BLACK_ANGLE[i])*INNER_CIRCLE1_RADIUS;
+	BLACK_Y[i]=BOARD_THICKNESS/2+COIN_HEIGHT;
+	BLACK_Z[i]=Math.cos(BLACK_ANGLE[i])*INNER_CIRCLE1_RADIUS;
 	black_sphere.position.set(BLACK_X[i],BLACK_Y[i],BLACK_Z[i]);
 	scene.add(black_sphere);
 }
 for(var i=0;i<WHITE_COINS_NO;i++){
 	var white_sphere=new THREE.Mesh(coin_geometry,white_sphere_material);
+	WHITE_X[i]=Math.sin(WHITE_ANGLE[i])*INNER_CIRCLE1_RADIUS;
+	WHITE_Y[i]=BOARD_THICKNESS/2+COIN_HEIGHT;
+	WHITE_Z[i]=Math.cos(WHITE_ANGLE[i])*INNER_CIRCLE1_RADIUS;
 	white_sphere.position.set(WHITE_X[i],WHITE_Y[i],WHITE_Z[i]);
 	scene.add(white_sphere);
 }
+
+//Striker
+var striker_geometry=new THREE.CylinderGeometry(STRIKER_RADIUS,STRIKER_RADIUS,STRIKER_HEIGHT,CIRCLE_SEGMENTS);
+var striker_material=new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+var striker=new THREE.Mesh(striker_geometry, striker_material);
+striker.position.set(STRIKER_X,STRIKER_Y,STRIKER_Z);
+scene.add(striker)
 
 //Rendering
 camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
