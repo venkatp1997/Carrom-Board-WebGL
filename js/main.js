@@ -78,8 +78,18 @@ for(var i=0;i<WHITE_COINS_NO;i++){
 var striker_geometry=new THREE.CylinderGeometry(STRIKER_RADIUS,STRIKER_RADIUS,STRIKER_HEIGHT,CIRCLE_SEGMENTS);
 var striker_material=new THREE.MeshBasicMaterial( {color: 0x0000ff} );
 var striker=new THREE.Mesh(striker_geometry, striker_material);
-striker.position.set(STRIKER_X,STRIKER_Y,STRIKER_Z);
-scene.add(striker)
+function updateStriker(){
+	switch(STRIKER_DIRECTION){
+		case("L"):
+			STRIKER_Z=Math.min(STRIKER_Z+2,INNER_RECTANGLE_MAXZ);
+			break;
+		case("R"):
+			STRIKER_Z=Math.max(STRIKER_Z-2,INNER_RECTANGLE_MINZ);
+			break;
+	}
+	striker.position.set(STRIKER_X,STRIKER_Y,STRIKER_Z);
+	scene.add(striker)
+}
 
 //Rendering
 camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
@@ -88,6 +98,23 @@ camera.lookAt(new THREE.Vector3(0,0,0));
 var render = function () {
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
+	document.addEventListener("keydown",keyDownHandler, false);	
+	document.addEventListener("keyup",keyUpHandler, false);	
+	updateStriker();
 };
 
+function keyDownHandler(event){
+	var keyPressed = String.fromCharCode(event.keyCode);
+	switch (keyPressed){
+		case "A":
+			STRIKER_DIRECTION="L";
+			break;
+		case "D":
+			STRIKER_DIRECTION="R";
+			break;
+	}
+}
+function keyUpHandler(event){
+	STRIKER_DIRECTION="N";
+}
 render();
