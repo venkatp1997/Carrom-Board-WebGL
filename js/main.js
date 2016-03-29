@@ -229,6 +229,12 @@ function coin_coin(flag_1,i,flag_2,j){
 	}
 }
 function updateCollisions(){
+	for(var j=0;j<4;j++){
+		if(Math.sqrt(Math.pow((POCKET_X[j]-STRIKER_X),2)+Math.pow((POCKET_Z[j]-STRIKER_Z),2))<(POCKET_RADIUS+STRIKER_RADIUS)){
+			SCORE-=20;
+			striker_init();
+		}
+	}
 	for(var i=0;i<BLACK_COINS_NO;i++){
 		if(Math.sqrt(Math.pow((STRIKER_X-BLACK_X[i]),2)+Math.pow((STRIKER_Z-BLACK_Z[i]),2))<(STRIKER_RADIUS+COIN_RADIUS)){
 			var diffZ=Math.abs(STRIKER_Z-BLACK_Z[i]);
@@ -283,48 +289,52 @@ function updateCollisions(){
 }
 function updateCoins(){
 	for(var i=0;i<BLACK_COINS_NO;i++){
-		if(BLACK_X[i]>STRIKER_MAXX || BLACK_X[i]<STRIKER_MINX){
-			BLACK_VELOCITYX_F[i]*=-1;
-		}
-		if(BLACK_Z[i]>STRIKER_MAXZ || BLACK_Z[i]<STRIKER_MINZ){
-			BLACK_VELOCITYZ_F[i]*=-1;
-		}
-		BLACK_VELOCITYX[i]*=BLACK_VELOCITYX_F[i];
-		BLACK_VELOCITYZ[i]*=BLACK_VELOCITYZ_F[i];
-		BLACK_X[i]-=BLACK_VELOCITYX[i];
-		BLACK_Z[i]+=BLACK_VELOCITYZ[i];
-		BLACK_VELOCITYX[i]=Math.max(BLACK_VELOCITYX[i]-FRICTION,0);
-		BLACK_VELOCITYZ[i]=Math.max(BLACK_VELOCITYZ[i]-FRICTION,0);
-		BLACK_SPHERE[i].position.set(BLACK_X[i],BLACK_Y[i],BLACK_Z[i]);
-		for(var j=0;j<4;j++){
-			if(Math.sqrt(Math.pow((POCKET_X[j]-BLACK_X[i]),2)+Math.pow((POCKET_Z[j]-BLACK_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
-				BLACK_VISIBLE[j]=0;
+			if(BLACK_X[i]>STRIKER_MAXX || BLACK_X[i]<STRIKER_MINX){
+				BLACK_VELOCITYX_F[i]*=-1;
 			}
-		}
-		if(BLACK_VISIBLE[i]==1)
-			scene.add(BLACK_SPHERE[i]);
+			if(BLACK_Z[i]>STRIKER_MAXZ || BLACK_Z[i]<STRIKER_MINZ){
+				BLACK_VELOCITYZ_F[i]*=-1;
+			}
+			BLACK_VELOCITYX[i]*=BLACK_VELOCITYX_F[i];
+			BLACK_VELOCITYZ[i]*=BLACK_VELOCITYZ_F[i];
+			BLACK_X[i]-=BLACK_VELOCITYX[i];
+			BLACK_Z[i]+=BLACK_VELOCITYZ[i];
+			BLACK_VELOCITYX[i]=Math.max(BLACK_VELOCITYX[i]-FRICTION,0);
+			BLACK_VELOCITYZ[i]=Math.max(BLACK_VELOCITYZ[i]-FRICTION,0);
+			BLACK_SPHERE[i].position.set(BLACK_X[i],BLACK_Y[i],BLACK_Z[i]);
+			for(var j=0;j<4;j++){
+				if(Math.sqrt(Math.pow((POCKET_X[j]-BLACK_X[i]),2)+Math.pow((POCKET_Z[j]-BLACK_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
+					SCORE-=20*BLACK_VISIBLE[j];
+					BLACK_VISIBLE[j]=0;
+					scene.remove(BLACK_SPHERE);
+				}
+			}
+			if(BLACK_VISIBLE[i]==1)
+				scene.add(BLACK_SPHERE[i]);
 	}	
 	for(var i=0;i<WHITE_COINS_NO;i++){
-		if(WHITE_X[i]>STRIKER_MAXX || WHITE_X[i]<STRIKER_MINX){
-			WHITE_VELOCITYX_F[i]*=-1;
-		}
-		if(WHITE_Z[i]>STRIKER_MAXZ || WHITE_Z[i]<STRIKER_MINZ){
-			WHITE_VELOCITYZ_F[i]*=-1;
-		}
-		WHITE_VELOCITYX[i]*=WHITE_VELOCITYX_F[i]
-		WHITE_VELOCITYZ[i]*=WHITE_VELOCITYZ_F[i]
-		WHITE_X[i]-=WHITE_VELOCITYX[i];
-		WHITE_Z[i]+=WHITE_VELOCITYZ[i];
-		WHITE_VELOCITYX[i]=Math.max(WHITE_VELOCITYX[i]-FRICTION,0);
-		WHITE_VELOCITYZ[i]=Math.max(WHITE_VELOCITYZ[i]-FRICTION,0);
-		WHITE_SPHERE[i].position.set(WHITE_X[i],WHITE_Y[i],WHITE_Z[i]);
-		for(var j=0;j<4;j++){
-			if(Math.sqrt(Math.pow((POCKET_X[j]-WHITE_X[i]),2)+Math.pow((POCKET_Z[j]-WHITE_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
-				WHITE_VISIBLE[j]=0;
+			if(WHITE_X[i]>STRIKER_MAXX || WHITE_X[i]<STRIKER_MINX){
+				WHITE_VELOCITYX_F[i]*=-1;
 			}
-		}
-		if(WHITE_VISIBLE[i]==1)
-			scene.add(WHITE_SPHERE[i]);
+			if(WHITE_Z[i]>STRIKER_MAXZ || WHITE_Z[i]<STRIKER_MINZ){
+				WHITE_VELOCITYZ_F[i]*=-1;
+			}
+			WHITE_VELOCITYX[i]*=WHITE_VELOCITYX_F[i]
+			WHITE_VELOCITYZ[i]*=WHITE_VELOCITYZ_F[i]
+			WHITE_X[i]-=WHITE_VELOCITYX[i];
+			WHITE_Z[i]+=WHITE_VELOCITYZ[i];
+			WHITE_VELOCITYX[i]=Math.max(WHITE_VELOCITYX[i]-FRICTION,0);
+			WHITE_VELOCITYZ[i]=Math.max(WHITE_VELOCITYZ[i]-FRICTION,0);
+			WHITE_SPHERE[i].position.set(WHITE_X[i],WHITE_Y[i],WHITE_Z[i]);
+			for(var j=0;j<4;j++){
+				if(Math.sqrt(Math.pow((POCKET_X[j]-WHITE_X[i]),2)+Math.pow((POCKET_Z[j]-WHITE_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
+					SCORE+=5*WHITE_VISIBLE[j];
+					WHITE_VISIBLE[j]=0;
+					scene.remove(WHITE_SPHERE);
+				}
+			}
+			if(WHITE_VISIBLE[i]==1)
+				scene.add(WHITE_SPHERE[i]);
 	}
 }
 function updateCamera(){
@@ -361,8 +371,21 @@ var render = function () {
 	updateCursor();
 	updateCollisions();
 	updateCoins();
+	var text = document.createElement('div');
+	text.style.position = 'absolute';
+	//text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+	text.style.width = 500;
+	text.style.height = 500;
+	text.style.backgroundColor = "white";
+	text.innerHTML = SCORE;
+	text.style.top =50 + 'px';
+	text.style.left = 1950 + 'px';
+	document.body.appendChild(text);
 };
-
+function timer(){
+	SCORE-=1;
+	setTimeout(timer,5000);
+}
 //Movements.
 function keyDownHandler(event){
 	var keyPressed = String.fromCharCode(event.keyCode);
@@ -430,18 +453,18 @@ function mouseHandler(event) {
 	MOUSE_X=event.clientX;
 	MOUSE_X=event.clientY;
 }
-var score=0;
 var text = document.createElement('div');
 text.style.position = 'absolute';
 //text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
 text.style.width = 500;
 text.style.height = 500;
 text.style.backgroundColor = "white";
-text.innerHTML = score;
+text.innerHTML = SCORE;
 text.style.top =50 + 'px';
-text.style.left = 1650 + 'px';
+text.style.left = 1950 + 'px';
 document.body.appendChild(text);
 
+timer();
 //Rendering
 camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
 camera.lookAt(new THREE.Vector3(0,0,0));
