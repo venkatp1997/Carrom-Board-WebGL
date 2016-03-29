@@ -77,7 +77,12 @@ for(var i=0;i<WHITE_COINS_NO;i++){
 //Striker
 var striker_geometry=new THREE.CylinderGeometry(STRIKER_RADIUS,STRIKER_RADIUS,STRIKER_HEIGHT,CIRCLE_SEGMENTS);
 var striker_material=new THREE.MeshBasicMaterial( {color: 0x0000ff} );
-var striker=new THREE.Mesh(striker_geometry, striker_material);
+var striker_mesh=new THREE.Mesh(striker_geometry, striker_material);
+var striker=new THREE.Object3D();
+striker.add(striker_mesh);
+var translation_matrix = new THREE.Matrix4();
+translation_matrix.makeTranslation(STRIKER_X,STRIKER_Y,STRIKER_Z);
+striker.applyMatrix(translation_matrix);
 
 //Arrow
 var dir=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z);
@@ -86,7 +91,6 @@ var length=50;
 var hex=0x000000;
 var arrowHelper=new THREE.ArrowHelper(dir,origin,length,hex);
 scene.add(arrowHelper);
-
 
 //Power Bar
 var bar_geometry=new THREE.BoxGeometry( BAR_HEIGHT, BAR_THICKNESS, BAR_WIDTH );
@@ -112,8 +116,26 @@ function updateStriker(){
 			STRIKER_Z=Math.max(STRIKER_Z-2,INNER_RECTANGLE_MINZ);
 			break;
 	}
+	if(STRIKER_MOV==1){
+		var STRIKER_VELOCITYX=STRIKER_VELOCITY*Math.cos(STRIKER_ANGLE);
+		var STRIKER_VELOCITYZ=STRIKER_VELOCITY*Math.sin(STRIKER_ANGLE);
+		if(STRIKER_X>STRIKER_MAXX || STRIKER_X<STRIKER_MINX){
+			STRIKER_VELOCITYX_F*=-1;
+		}
+		if(STRIKER_Z>STRIKER_MAXZ || STRIKER_Z<STRIKER_MINZ){
+			STRIKER_VELOCITYZ_F*=-1;
+		}
+		STRIKER_VELOCITYX*=STRIKER_VELOCITYX_F
+		STRIKER_VELOCITYZ*=STRIKER_VELOCITYZ_F
+		STRIKER_X-=STRIKER_VELOCITYX;
+		STRIKER_Z+=STRIKER_VELOCITYZ;
+		STRIKER_VELOCITY=Math.max(STRIKER_VELOCITY-FRICTION,0);
+		if(STRIKER_VELOCITY==0){
+			striker_init();
+		}
+	}
 	striker.position.set(STRIKER_X,STRIKER_Y,STRIKER_Z);
-	scene.add(striker)
+	scene.add(striker);
 }
 function updateArrow(){
 	switch(ARROW_DIRECTION){
@@ -123,13 +145,15 @@ function updateArrow(){
 			b.applyEuler(a);
 			ARROW_X=b.x;
 			ARROW_Z=b.z;
+			STRIKER_ANGLE+=ARROW_ROTATION_ANGLE;
 			break;
 		case("R"):
-			var a=new THREE.Euler(0,ARROW_ROTATION_ANGLE,0, 'XYZ' );
+			var a=new THREE.Euler(0,-ARROW_ROTATION_ANGLE,0, 'XYZ' );
 			var b=new THREE.Vector3(ARROW_X,ARROW_Y,ARROW_Z); 
 			b.applyEuler(a);
 			ARROW_X=b.x;
 			ARROW_Z=b.z;
+			STRIKER_ANGLE-=ARROW_ROTATION_ANGLE;
 			break;
 	}
 	scene.remove(arrowHelper);
@@ -138,7 +162,8 @@ function updateArrow(){
 	length=50;
 	hex=0x000000;
 	arrowHelper=new THREE.ArrowHelper(dir,origin,length,hex);
-	scene.add(arrowHelper);
+	if(DIRECTION_SET==1)
+		scene.add(arrowHelper);
 }
 function updateCursor(){
 	cursor.position.set(CURSOR_X, CURSOR_Y, CURSOR_Z);  
@@ -183,7 +208,11 @@ function keyDownHandler(event){
 				break;
 		}
 	}
-	
+	if(event.keyCode==13 && POWER_SET==1){
+		POWER_SET=0;
+		STRIKER_VELOCITY=5*CURSOR_XDIFF/CURSOR_MAXX;
+		STRIKER_MOV=1;
+	}	
 	if(event.keyCode==13 && DIRECTION_SET==1){
 		DIRECTION_SET=0;
 		DIRECTION_DIRECTION="N";
@@ -203,6 +232,7 @@ function mouseHandler(event) {
 	MOUSE_X=event.clientX;
 	MOUSE_X=event.clientY;
 }
+
 //Rendering
 camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
 camera.lookAt(new THREE.Vector3(0,0,0));
