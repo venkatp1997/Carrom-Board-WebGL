@@ -51,9 +51,9 @@ for(var i=0;i<EDGE_CIRCLES_NO;i++){
 //Coins
 var coin_geometry=new THREE.CylinderGeometry(COIN_RADIUS,COIN_RADIUS,COIN_HEIGHT,CIRCLE_SEGMENTS);
 var coin_material=new THREE.MeshBasicMaterial( {color: 0xff0000} );
-var coin=new THREE.Mesh(coin_geometry, coin_material);
-coin.position.set(RED_X,RED_Y,RED_Z);
-scene.add(coin);
+var RED_SPHERE=new THREE.Mesh(coin_geometry, coin_material);
+RED_SPHERE.position.set(RED_X,RED_Y,RED_Z);
+scene.add(RED_SPHERE);
 
 var black_sphere_material=new THREE.MeshBasicMaterial({color: 0x000000});
 var white_sphere_material=new THREE.MeshBasicMaterial({color: 0xffffff});
@@ -130,6 +130,8 @@ function updateStriker(){
 		STRIKER_X-=STRIKER_VELOCITYX;
 		STRIKER_Z+=STRIKER_VELOCITYZ;
 		STRIKER_VELOCITY=Math.max(STRIKER_VELOCITY-FRICTION,0);
+		STRIKER_VELOCITYX=STRIKER_VELOCITY*Math.cos(STRIKER_ANGLE);
+		STRIKER_VELOCITYZ=STRIKER_VELOCITY*Math.sin(STRIKER_ANGLE);
 		if(STRIKER_VELOCITY==0){
 			striker_init();
 			add_newarrow();
@@ -210,12 +212,20 @@ function coin_coin(flag_1,i,flag_2,j){
 		xv1=velSA*Math.cos(alpha)-velSP*Math.sin(alpha),zv1=velSP*Math.cos(alpha)+velSA*Math.sin(alpha);
 		xv2 = velCA*Math.cos(alpha) - velCP*Math.sin(alpha);
 		zv2 = velCP*Math.cos(alpha) + velCA*Math.sin(alpha);
+
+		var overlap=(COIN_RADIUS+COIN_RADIUS)-Math.sqrt(Math.pow((x1-x2),2)+Math.pow((z1-z2),2));
+		x1-=(0.2*Math.cos(alpha)*overlap);
+		z1+=(0.2*Math.sin(alpha)*overlap);
 	}	
 	if(flag_1==1){
+		BLACK_X[i]=x1;
+		BLACK_Z[i]=z1;
 		BLACK_VELOCITYX[i]=xv1;
 		BLACK_VELOCITYZ[i]=zv1;
 	}
 	else{
+		WHITE_X[i]=x1;
+		WHITE_Z[i]=z1;
 		WHITE_VELOCITYX[i]=xv1;
 		WHITE_VELOCITYZ[i]=zv1;
 	}
@@ -234,6 +244,22 @@ function updateCollisions(){
 			SCORE-=20;
 			striker_init();
 		}
+	}
+	if(Math.sqrt(Math.pow((STRIKER_X-RED_X),2)+Math.pow((STRIKER_Z-RED_Z),2))<(STRIKER_RADIUS+COIN_RADIUS)){
+		var diffZ=Math.abs(STRIKER_Z-RED_Z);
+		var diffX=Math.abs(STRIKER_X-RED_X);
+		var alpha=Math.atan(diffZ/diffX);
+		var velSA = STRIKER_VELOCITYX*Math.cos(alpha) + STRIKER_VELOCITYZ*Math.sin(alpha);	
+		var velSP = STRIKER_VELOCITYZ*Math.cos(alpha) - STRIKER_VELOCITYX*Math.sin(alpha);
+		var velCA = RED_VELOCITYX*Math.cos(alpha) + RED_VELOCITYZ*Math.sin(alpha); 
+		var velCP = RED_VELOCITYZ*Math.cos(alpha) - RED_VELOCITYX*Math.sin(alpha);
+
+		var temp = (1- COEFFICIENT_RES)*velCA + (1+COEFFICIENT_RES)*velSA; // switch S with C and visa versa
+		velSA = ((1-COEFFICIENT_RES)*velSA + (1+COEFFICIENT_RES)*velCA)/2 , velCA = temp/2; // and these
+
+		STRIKER_VELOCITYX=velSA*Math.cos(alpha)-velSP*Math.sin(alpha),STRIKER_VELOCITYZ=velSP*Math.cos(alpha)+velSA*Math.sin(alpha);
+		RED_VELOCITYX = velCA*Math.cos(alpha) - velCP*Math.sin(alpha);
+		RED_VELOCITYZ = velCP*Math.cos(alpha) + velCA*Math.sin(alpha);
 	}
 	for(var i=0;i<BLACK_COINS_NO;i++){
 		if(Math.sqrt(Math.pow((STRIKER_X-BLACK_X[i]),2)+Math.pow((STRIKER_Z-BLACK_Z[i]),2))<(STRIKER_RADIUS+COIN_RADIUS)){
@@ -262,6 +288,22 @@ function updateCollisions(){
 		for(var j=0;j<WHITE_COINS_NO;j++){
 			coin_coin(1,i,0,j);
 		}
+		if(Math.sqrt(Math.pow((BLACK_X[i]-RED_X),2)+Math.pow((BLACK_Z[i]-RED_Z),2))<(COIN_RADIUS+COIN_RADIUS)){
+			var diffZ=Math.abs(BLACK_Z[i]-RED_Z);
+			var diffX=Math.abs(BLACK_X[i]-RED_X);
+			var alpha=Math.atan(diffZ/diffX);
+			var velSA = BLACK_VELOCITYX[i]*Math.cos(alpha) + BLACK_VELOCITYZ[i]*Math.sin(alpha);	
+			var velSP = BLACK_VELOCITYZ[i]*Math.cos(alpha) - BLACK_VELOCITYX[i]*Math.sin(alpha);
+			var velCA = RED_VELOCITYX*Math.cos(alpha) + RED_VELOCITYZ*Math.sin(alpha); 
+			var velCP = RED_VELOCITYX*Math.cos(alpha) - RED_VELOCITYX*Math.sin(alpha);
+
+			var temp = (1- COEFFICIENT_RES)*velCA + (1+COEFFICIENT_RES)*velSA; // switch S with C and visa versa
+			velSA = ((1-COEFFICIENT_RES)*velSA + (1+COEFFICIENT_RES)*velCA)/2 , velCA = temp/2; // and these
+
+			BLACK_VELOCITYX[i]=velSA*Math.cos(alpha)-velSP*Math.sin(alpha),BLACK_VELOCITYZ[i]=velSP*Math.cos(alpha)+velSA*Math.sin(alpha);
+			RED_VELOCITYX = velCA*Math.cos(alpha) - velCP*Math.sin(alpha);
+			RED_VELOCITYZ = velCP*Math.cos(alpha) + velCA*Math.sin(alpha);
+		}
 	}
 	for(var i=0;i<WHITE_COINS_NO;i++){
 		if(Math.sqrt(Math.pow((STRIKER_X-WHITE_X[i]),2)+Math.pow((STRIKER_Z-WHITE_Z[i]),2))<(STRIKER_RADIUS+COIN_RADIUS)){
@@ -285,9 +327,35 @@ function updateCollisions(){
 				coin_coin(0,i,0,j);
 			}
 		}
+		if(Math.sqrt(Math.pow((WHITE_X[i]-RED_X),2)+Math.pow((WHITE_Z[i]-RED_Z),2))<(COIN_RADIUS+COIN_RADIUS)){
+			var diffZ=Math.abs(WHITE_Z[i]-RED_Z);
+			var diffX=Math.abs(WHITE_X[i]-RED_X);
+			var alpha=Math.atan(diffZ/diffX);
+			var velSA = WHITE_VELOCITYX[i]*Math.cos(alpha) + WHITE_VELOCITYZ[i]*Math.sin(alpha);	
+			var velSP = WHITE_VELOCITYZ[i]*Math.cos(alpha) - WHITE_VELOCITYX[i]*Math.sin(alpha);
+			var velCA = RED_VELOCITYX*Math.cos(alpha) + RED_VELOCITYZ*Math.sin(alpha); 
+			var velCP = RED_VELOCITYX*Math.cos(alpha) - RED_VELOCITYX*Math.sin(alpha);
+
+			var temp = (1- COEFFICIENT_RES)*velCA + (1+COEFFICIENT_RES)*velSA; // switch S with C and visa versa
+			velSA = ((1-COEFFICIENT_RES)*velSA + (1+COEFFICIENT_RES)*velCA)/2 , velCA = temp/2; // and these
+
+			WHITE_VELOCITYX[i]=velSA*Math.cos(alpha)-velSP*Math.sin(alpha),WHITE_VELOCITYZ[i]=velSP*Math.cos(alpha)+velSA*Math.sin(alpha);
+			RED_VELOCITYX = velCA*Math.cos(alpha) - velCP*Math.sin(alpha);
+			RED_VELOCITYZ = velCP*Math.cos(alpha) + velCA*Math.sin(alpha);
+		}
 	}
 }
 function updateCoins(){
+	for(var j=0;j<4;j++){
+		if(Math.sqrt(Math.pow((POCKET_X[j]-RED_X),2)+Math.pow((POCKET_Z[j]-RED_Z),2))<(POCKET_RADIUS+COIN_RADIUS)){
+			RED_VISIBLE=0;
+			RED_STATUS=1;
+			RED_X-=300;
+			RED_SPHERE.position.set(-10000,0,10000);
+			RED_TURN=TURN;
+			console.log(RED_TURN);
+		}
+	}
 	for(var i=0;i<BLACK_COINS_NO;i++){
 			if(BLACK_X[i]>STRIKER_MAXX || BLACK_X[i]<STRIKER_MINX){
 				BLACK_VELOCITYX_F[i]*=-1;
@@ -304,9 +372,11 @@ function updateCoins(){
 			BLACK_SPHERE[i].position.set(BLACK_X[i],BLACK_Y[i],BLACK_Z[i]);
 			for(var j=0;j<4;j++){
 				if(Math.sqrt(Math.pow((POCKET_X[j]-BLACK_X[i]),2)+Math.pow((POCKET_Z[j]-BLACK_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
-					SCORE-=20*BLACK_VISIBLE[j];
-					BLACK_VISIBLE[j]=0;
-					scene.remove(BLACK_SPHERE);
+					// SCORE-=20*BLACK_VISIBLE[i];
+					SCORE-=20;
+					BLACK_VISIBLE[i]=0;
+					BLACK_SPHERE[i].position.set(-10000,-10000,-10000);
+					BLACK_X[i]=BLACK_Y[i]=BLACK_Z[i]=-10000;
 				}
 			}
 			if(BLACK_VISIBLE[i]==1)
@@ -328,14 +398,41 @@ function updateCoins(){
 			WHITE_SPHERE[i].position.set(WHITE_X[i],WHITE_Y[i],WHITE_Z[i]);
 			for(var j=0;j<4;j++){
 				if(Math.sqrt(Math.pow((POCKET_X[j]-WHITE_X[i]),2)+Math.pow((POCKET_Z[j]-WHITE_Z[i]),2))<(POCKET_RADIUS+COIN_RADIUS)){
-					SCORE+=5*WHITE_VISIBLE[j];
-					WHITE_VISIBLE[j]=0;
-					scene.remove(WHITE_SPHERE);
+					// SCORE+=5*WHITE_VISIBLE[j];
+					SCORE+=5;
+					WHITE_VISIBLE[i]=0;
+					WHITE_SPHERE[i].position.set(-10000,-10000,-10000);
+					WHITE_X[i]=WHITE_Y[i]=WHITE_Z[i]=-10000;
+					if(RED_TURN==(TURN-1) || (RED_TURN==TURN)){SCORE+=20;RED_STATUS=2;RED_VISIBLE=0;}
 				}
 			}
 			if(WHITE_VISIBLE[i]==1)
 				scene.add(WHITE_SPHERE[i]);
 	}
+	if(RED_X>STRIKER_MAXX || RED_X<STRIKER_MINX){
+		RED_VELOCITYX_F*=-1;
+	}
+	if(RED_Z>STRIKER_MAXZ || RED_Z<STRIKER_MINZ){
+		RED_VELOCITYZ_F*=-1;
+	}
+	RED_VELOCITYX*=RED_VELOCITYX_F;
+	RED_VELOCITYZ*=RED_VELOCITYZ_F;
+	RED_X-=RED_VELOCITYX;
+	RED_Z+=RED_VELOCITYZ;
+	RED_VELOCITYX=Math.max(RED_VELOCITYX-FRICTION,0);
+	RED_VELOCITYZ=Math.max(RED_VELOCITYZ-FRICTION,0);
+	RED_SPHERE.position.set(RED_X,RED_Y,RED_Z);
+	// for(var j=0;j<4;j++){
+	// 	if(Math.sqrt(Math.pow((POCKET_X[j]-RED_X),2)+Math.pow((POCKET_Z[j]-RED_Z),2))<(POCKET_RADIUS+COIN_RADIUS)){
+	// 		RED_VISIBLE=0;
+	// 		RED_STATUS=1;
+	// 		RED_X-=300;
+	// 		RED_SPHERE.position.set(RED_X,0,RED_Z);
+	// 		RED_TURN=TURN;
+	// 		console.log(RED_TURN);
+	// 	}
+	// }
+	scene.add(RED_SPHERE);
 }
 function updateCamera(){
 	if(CAMERA_MOV==0){
@@ -345,6 +442,12 @@ function updateCamera(){
 	else if(CAMERA_MOV==1){
 		camera.position.set(200,100,0);
 		camera.lookAt(new THREE.Vector3(0,0,0));
+	}
+}
+function updateRed(){
+	if(RED_TURN==(TURN-1) && RED_STATUS==1 && STRIKER_VELOCITY==0){
+		red_init();
+		console.log("Hi");
 	}
 }
 var render = function () {
@@ -371,16 +474,18 @@ var render = function () {
 	updateCursor();
 	updateCollisions();
 	updateCoins();
+	updateRed();
 	var text = document.createElement('div');
 	text.style.position = 'absolute';
 	//text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
-	text.style.width = 500;
-	text.style.height = 500;
+	text.style.width = 100;
+	text.style.height = 100;
 	text.style.backgroundColor = "white";
 	text.innerHTML = SCORE;
 	text.style.top =50 + 'px';
-	text.style.left = 1950 + 'px';
+	text.style.left = 1900 + 'px';
 	document.body.appendChild(text);
+	console.log(SCORE);
 };
 function timer(){
 	SCORE-=1;
@@ -433,6 +538,7 @@ function keyDownHandler(event){
 		STRIKER_VELOCITYX=STRIKER_VELOCITY*Math.cos(STRIKER_ANGLE);
 		STRIKER_VELOCITYZ=STRIKER_VELOCITY*Math.sin(STRIKER_ANGLE);
 		STRIKER_MOV=1;
+		TURN+=1;
 	}	
 	if(event.keyCode==13 && DIRECTION_SET==1){
 		DIRECTION_SET=0;
@@ -453,18 +559,20 @@ function mouseHandler(event) {
 	MOUSE_X=event.clientX;
 	MOUSE_X=event.clientY;
 }
-var text = document.createElement('div');
-text.style.position = 'absolute';
-//text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
-text.style.width = 500;
-text.style.height = 500;
-text.style.backgroundColor = "white";
-text.innerHTML = SCORE;
-text.style.top =50 + 'px';
-text.style.left = 1950 + 'px';
-document.body.appendChild(text);
+// var text = document.createElement('div');
+// text.style.position = 'absolute';
+// //text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
+// text.style.width = 100;
+// text.style.height = 100;
+// text.style.backgroundColor = "white";
+// text.innerHTML = SCORE;
+// text.style.top =50 + 'px';
+// text.style.left = 1900 + 'px';
+// document.body.appendChild(text);
 
 timer();
+WHITE_X[0]=-120;
+WHITE_Z[0]=-130;
 //Rendering
 camera.position.set(CAMERA_X,CAMERA_Y,CAMERA_Z);
 camera.lookAt(new THREE.Vector3(0,0,0));
